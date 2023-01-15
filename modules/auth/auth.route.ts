@@ -15,9 +15,9 @@ class AuthRoute {
     this.router.get('/', (req, res) => {
       res.json({ success: true, authRoute: true })
     })
-    // this.router.post('/signup', this.authController.signUp);
-    // this.router.post('/login', this.authController.logIn);
-    // this.router.get('/current',  this.authController.getCurrentUser);
+    this.router.post('/signup', this.authController.signUp);
+    this.router.post('/login', this.authController.logIn);
+    this.router.get('/current',  this.authController.getCurrentUser);
   }
 }
 
