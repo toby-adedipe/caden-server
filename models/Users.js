@@ -58,6 +58,11 @@ const UsersSchema = new Schema({
     type: Date,
     default: Date.now
   },
+  status: {
+    type: String,
+    default: 'regular',
+    required: true,
+  },
   hash: String,
   salt: String,
 });
