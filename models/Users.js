@@ -4,8 +4,60 @@ const jwt = require('jsonwebtoken');
 
 const { Schema } = mongoose;
 
+const ThirdPartyProviderShema = new Schema({
+  provider_name: {
+    type: String,
+    default: null 
+  },
+  provider_id: {
+    type: String,
+    default: null 
+  },
+  provider_data: {
+    type: {},
+    default: null 
+  }
+})
+
 const UsersSchema = new Schema({
-  email: String,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  first_name: {
+    type: String
+  },
+  email_is_verified: {
+    type: Boolean,
+    default: false,
+  },
+  last_name: {
+    type: String
+  },
+  password: {
+    type: String
+  },
+  referral_code: {
+    type: String,
+    default: function() {
+      let hash = 0;
+      for(let i = 0; i<this.email.length; i++){
+        hash = this.email.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      let res = (hash & 0x00ffffff).toString(16).toUpperCase();
+      return "0000".substring(0, 6 - res.length) + res;
+    }
+  },
+  referred_by: {
+    type: String,
+    default: null
+  },
+  third_party_auth: [ThirdPartyProviderShema],
+  date: {
+    type: Date,
+    default: Date.now
+  },
   hash: String,
   salt: String,
 });
@@ -40,4 +92,4 @@ UsersSchema.methods.toAuthJSON = function() {
   };
 };
 
-mongoose.model('Users', UsersSchema);
+module.exports = mongoose.model("Users", UsersSchema);

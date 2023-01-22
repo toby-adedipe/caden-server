@@ -2,11 +2,15 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const errorHandler = require('errorhandler');
 const { Loaders } = require('./loaders');
+
 // var { expressjwt: jwt } = require("express-jwt");
+
+const passport = require("./config/passport");
 
 mongoose.promise = global.Promise;
 
@@ -19,30 +23,35 @@ app.use(require('morgan')('dev'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+//Configure Mongoose
+mongoose
+  .connect(process.env.MONGO_URL, { useNewUrlParser: true })
+  .then(console.log(`MongoDb connected ${process.env.MONGO_URL}`))
+  .catch(err=> console.log(`MongoDb error: ${err}`));
+mongoose.set('debug', true);
+
 app.use(session({ 
   secret: 'caden-server', 
   cookie: { 
     maxAge: 60000 
   }, 
   resave: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL}),
   saveUninitialized: false
 }));
 
-//Configure Mongoose
-mongoose.connect('mongodb://127.0.0.1:27017');
-mongoose.set('debug', true);
-
 //Models & Routes
 require('./models/Users');
-require('./config/passport');
 
-function terminateProcessGracefully(code) {
+async function terminateProcessGracefully(code) {
   console.log('Process terminated successfully');
   process.exit(code);
 }
 
 const startServer = async () =>  {
-  await Loaders.init(app)
+  await Loaders.init(app);
 }
 
 (async () => {
