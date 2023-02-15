@@ -38,6 +38,9 @@ const UsersSchema = new Schema({
   password: {
     type: String
   },
+  verification_code: {
+    type: String
+  },
   referral_code: {
     type: String,
     default: function() {

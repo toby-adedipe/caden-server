@@ -1,119 +1,51 @@
 const mongoose = require('mongoose');
 import { NextFunction, Request, Response } from "express";
 import passport from 'passport';
-import { PrismaClient } from '@prisma/client'
+const axios = require("axios");
+const bcrypt = require('bcryptjs');
 
 require('../../models/Users');
 require('../../config/passport');
 
-const Users = mongoose.model('Users');
+const User = require('../../models/Users');
 
-const prisma = new PrismaClient();
-
+function generateVerificationCode() {
+  const length = Math.floor(Math.random() * 11) + 40; // Generate a length between 10 and 20
+  let code = '';
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // Define the character set
+  for (let i = 0; i < length; i++) {
+    const index = Math.floor(Math.random() * charset.length); // Choose a random character from the set
+    code += charset.charAt(index);
+  }
+  return code;
+}
 
 export class AuthController {
 
   async signUp(req: Request, res: Response, next: NextFunction) {
+    const { email, password } = req.body;
+
     try {
-      console.log(req.body)
-      const { email,  password } = req.body;
-
-      const  user = {email, password};
-
-      if(!user.email) {
-        return res.status(422).json({
-          errors: {
-            email: 'is required',
-          }
-        })
-      }
-
-      if (!user.password) {
-        return res.status(422).json({
-          errors: {
-            password: 'is required',
-          },
+      const verification_code = generateVerificationCode();
+      console.log('verification_codes', verification_code);
+      const newUser = new User({ email, password, verification_code });
+      bcrypt.genSalt(10, (err:any, salt:any) => {
+        bcrypt.hash(newUser.password, salt, (err:any, hash:any) => {
+          if (err) throw err;
+          newUser.password = hash;
+          newUser.save()
+            .then((user:any) => {
+              return res.status(200).json({ success: true, message: 'User successfully created', user: user.toAuthJSON() });
+            })
+            .catch((err:any) => {
+              return next(err)
+            });
         });
-      }
-
-      const finalUser = new Users(user);
-
-      finalUser.setPassword(user?.password);
-
-      return finalUser.save().then(() => res.json({ user: finalUser.toAuthJSON() }));
+      });
     } catch (error) {
       return next(error);
     }
   }
-
-  async random(req: any, res: any, next: any) {
-    try {
-      const allUsers = await prisma.user.findMany()
-
-      return res.json({success: true, allUsers })
-  
-    } catch (error) {
-      return next(error);
-    }
-    // await prisma.user.create({
-    //   data: {
-    //     firstName: 'Rich',
-    //     lastName: 'Man',
-    //     email: 'hello@prisma.com',
-    //     status: 'regular',
-    //     requests: {
-    //       create: {
-    //         prompt: 'My first post',
-    //       },
-    //     },
-    //   },
-    // })
-  
-  }
-
-  // async logIn(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const { email,  password } = req.body;
-
-  //     const  user = {email, password};
-
-  //     if(!user.email) {
-  //       return res.status(422).json({
-  //         errors: {
-  //           email: 'is required',
-  //         },
-  //       });
-  //     }
-
-  //     if(!user.password) {
-  //       return res.status(422).json({
-  //         errors: {
-  //           password: 'is required',
-  //         },
-  //       });
-  //     }
-      
-  //     return passport.authenticate('local', { session: false }, (err:any, passportUser:any, info:any) => {
-  //       if (err) {
-  //         return next(err);
-  //       }
-
-  //       console.log('passportuser: ', passportUser);
-
-  //       if(passportUser) {
-  //         const user = passportUser;
-  //         user.token = passportUser.generateJWT();
-
-  //         return res.json({ user: user.toAuthJSON() });
-  //       }else{
-  //         return res.json({ message: 'user not found' });
-  //       }
-
-  //     })(req, res, next);
-  //   } catch (error) {
-  //     return next(error);
-  //   }
-  // }
 
   async logIn (req: Request, res: Response, next: NextFunction) {
     passport.authenticate("local", function(err, user, info) {
@@ -121,13 +53,13 @@ export class AuthController {
         return next(err);
       }
       if (!user) {
-        return res.status(400).json({ errors: "No user found" })
+        return res.status(400).json({ errors: info })
       }
       req.logIn(user, function(err) {
         if (err) {
           return next(err);
         }
-        return res.status(200).json({ success: `logged in ${user.id}`});
+        return res.status(200).json({ success: `logged in ${user.id}`, user: user.toAuthJSON() });
       });
     })(req, res, next);
   }
@@ -148,7 +80,24 @@ export class AuthController {
 //     });
   }
 
-  async logOut(req: any, res: Response, next: NextFunction) {
-    
+  async verifyUser(req: Request, res: Response, next: NextFunction){
+    User.findOne({
+      verification_code: req.query.verification_code,
+    })
+    .then((user: any) => {
+      
+      if (!user) {
+        return res.status(404).send({ message: "User not found" });
+      }
+
+      user.email_is_verified = true;
+      user.save((err: any) => {
+        if (err) {
+          return res.status(500).send({ message: err });
+        }
+        return res.status(200).json({ success: true, user: user.toAuthJSON() })
+      });
+    })
+    .catch((e:any) => console.log("error: ", e));
   }
 }

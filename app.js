@@ -7,6 +7,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const errorHandler = require('errorhandler');
 const { Loaders } = require('./loaders');
+require('dotenv').config()
 
 // var { expressjwt: jwt } = require("express-jwt");
 
@@ -17,7 +18,6 @@ mongoose.promise = global.Promise;
 const app = express();
 
 let server;
-
 app.use(cors());
 app.use(require('morgan')('dev'));
 app.use(bodyParser.urlencoded({ extended: false }));

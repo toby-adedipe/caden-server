@@ -1,5 +1,5 @@
 {
-  "watch": ["./"],
+  "watch": ["."],
   "ext": ".ts",
   "ignore": ["node_modules"],
   "exec": "npx ts-node ./app.js"
