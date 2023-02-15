@@ -66,6 +66,9 @@ const UsersSchema = new Schema({
     default: 'regular',
     required: true,
   },
+  reset_token: {
+    type: String,
+  },
   hash: String,
   salt: String,
 });

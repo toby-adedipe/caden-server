@@ -11,7 +11,9 @@ const transport = nodemailer.createTransport({
   }
 })
 
-module.exports.sendConfirmationEmail = (name:string, email:string, confirmationCode:string) => {
+const backendUrl = 'http://localhost:3000';
+
+module.exports.sendConfirmationEmail = (name:string, email:string, verificationCode:string) => {
   transport.sendMail({
     from: user,
     to: email,
@@ -21,7 +23,7 @@ module.exports.sendConfirmationEmail = (name:string, email:string, confirmationC
         <h4>Hello ${name},</h4>
         <p>We're thrilled to welcome you to Caiden, the writing assistant extension that's here to make your writing experience smoother and more enjoyable. Whether you're working on a blog post, writing an email, or crafting a story, Caiden is here to help.</p>
         <p>To get started, all you need to do is confirm your email address by clicking the link below:</p>
-        <p><a href="http://localhost:3000/verify/${confirmationCode}">http://localhost:3000/verify/${confirmationCode}</a></p>
+        <p><a href="${backendUrl}/verify/${verificationCode}">http://localhost:3000/verify/${verificationCode}</a></p>
         <p>Once you've confirmed your email, you can download the Caiden extension and start using it right away. With Caiden, you'll be able to access a range of writing tools and features designed to improve your writing, including:</p>
         <ul>
           <li>Real-time suggestions and corrections to help you write with confidence</li>
@@ -36,3 +38,20 @@ module.exports.sendConfirmationEmail = (name:string, email:string, confirmationC
         </div>`,
   }).catch((err:any) => console.log(err));
 };
+
+module.exports.sendPasswordResetEmail = (email: string) => {
+  const mailOptions = {
+    from: user,
+    to: email,
+    subject: 'Password Reset Request',
+    text: `Hello,\n\nYou have requested to reset your password. Please click on the following link to reset your password:\n\n${backendUrl}/forgot-password`,
+  };
+
+  transport.sendMail(mailOptions, (error:any, info:any) => {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log(`Email sent: ${info.response}`);
+    }
+  });
+}
