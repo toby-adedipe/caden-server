@@ -27,7 +27,6 @@ export class AuthController {
 
     try {
       const verification_code = generateVerificationCode();
-      console.log('verification_codes', verification_code);
       const newUser = new User({ email, password, verification_code });
       bcrypt.genSalt(10, (err:any, salt:any) => {
         bcrypt.hash(newUser.password, salt, (err:any, hash:any) => {
@@ -55,12 +54,17 @@ export class AuthController {
       if (!user) {
         return res.status(400).json({ errors: info })
       }
-      req.logIn(user, function(err) {
-        if (err) {
-          return next(err);
-        }
-        return res.status(200).json({ success: `logged in ${user.id}`, user: user.toAuthJSON() });
-      });
+      if (user && user?.email_is_verified){
+        req.logIn(user, function(err) {
+          if (err) {
+            return next(err);
+          }
+          return res.status(200).json({ success: `logged in ${user.id}`, user: user.toAuthJSON() });
+        });
+      }else {
+        return res.status(500).json({ success: false, error: 'email is not verified yet'})
+      }
+      
     })(req, res, next);
   }
 
@@ -95,7 +99,7 @@ export class AuthController {
         if (err) {
           return res.status(500).send({ message: err });
         }
-        return res.status(200).json({ success: true, user: user.toAuthJSON() })
+        return res.status(200).json({ success: true, message: 'your email has been verified', user: user.toAuthJSON() })
       });
     })
     .catch((e:any) => console.log("error: ", e));
