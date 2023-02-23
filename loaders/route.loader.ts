@@ -1,5 +1,6 @@
 import * as express from 'express';
 import { authRoute } from '../modules/auth/auth.route';
+import { writerRoute } from '../modules/writer/writer.route';
 
 export class RouteLoader {
   constructor() {
@@ -13,6 +14,7 @@ export class RouteLoader {
       res.json({ success: true, developmentMode: true })
     })
     app.use('/auth', authRoute);
+    app.use('/write', writerRoute)
     
     return app;
   } 

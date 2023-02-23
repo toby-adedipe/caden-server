@@ -13,36 +13,35 @@ export class AuthController {
 
   // signUp() method creates a new user
   async signUp(req: Request, res: Response, next: NextFunction) {
-  const { email, password, firstName, lastName } = req.body;
-  try {
-    // Generate verification code for the user
-    const verification_code = crypto.randomBytes(20).toString('hex');     
-  
-    // Create a new user object with the email, password and verification code
-    const newUser = new User({ email, password, verification_code, first_name: firstName, last_name: lastName });
-  
-    // Hash the password
-    bcrypt.genSalt(10, (err:any, salt:any) => {
-      bcrypt.hash(newUser.password, salt, (err:any, hash:any) => {
-        if (err) throw err;
-        newUser.password = hash;
-  
-        // Save the new user to the database
-        newUser.save()
-          .then((user:any) => {
-            return res.status(200).json({ success: true, message: 'User successfully created', user: user.toAuthJSON() });
-          })
-          .catch((err:any) => {
-            return next(err)
-          });
+    const { email, password, firstName, lastName } = req.body;
+    try {
+      // Generate verification code for the user
+      const verification_code = crypto.randomBytes(20).toString('hex');     
+    
+      // Create a new user object with the email, password and verification code
+      const newUser = new User({ email, password, verification_code, first_name: firstName, last_name: lastName });
+    
+      // Hash the password
+      bcrypt.genSalt(10, (err:any, salt:any) => {
+        bcrypt.hash(newUser.password, salt, (err:any, hash:any) => {
+          if (err) throw err;
+          newUser.password = hash;
+    
+          // Save the new user to the database
+          newUser.save()
+            .then((user:any) => {
+              return res.status(200).json({ success: true, message: 'User successfully created', user: user.toAuthJSON() });
+            })
+            .catch((err:any) => {
+              return next(err)
+            });
+        });
       });
-    });
-
-    //send email verification email.
-    emailService.sendConfirmationEmail(firstName, email, verification_code)
-  } catch (error) {
-    return next(error);
-  }
+        //send email verification email.
+        emailService.sendConfirmationEmail(firstName, email, verification_code)
+    } catch (error) {
+        return next(error);
+    }
   }
 
   // logIn() method logs in a user
@@ -165,6 +164,13 @@ export class AuthController {
     .catch((err:any) => {
       return next(err)
     });
+  }
 
+  async isAuthenticated(req: Request, res: Response, next: NextFunction) {
+    if (req.isAuthenticated()) {
+      return res.json({success: true, authenticated: true})
+    } else {
+      return res.json({success: true, authenticated: false})
+    }
   }
 }

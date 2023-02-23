@@ -7,6 +7,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const errorHandler = require('errorhandler');
 const { Loaders } = require('./loaders');
+
 require('dotenv').config()
 
 // var { expressjwt: jwt } = require("express-jwt");
@@ -29,18 +30,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 mongoose
   .connect(process.env.MONGO_URL, { useNewUrlParser: true })
   .then(console.log(`MongoDb connected ${process.env.MONGO_URL}`))
-  .catch(err=> console.log(`MongoDb error: ${err}`));
+  .catch((err) => console.log(`MongoDb error: ${err}`));
 mongoose.set('debug', true);
 
 app.use(session({ 
-  secret: 'caden-server', 
+  secret: process.env.SESSION_KEY,
   cookie: { 
-    maxAge: 60000 
-  }, 
+    maxAge: 60000,
+  },
   resave: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URL}),
   saveUninitialized: false
 }));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 //Models & Routes
 require('./models/Users');
