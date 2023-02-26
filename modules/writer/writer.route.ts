@@ -25,7 +25,6 @@ class WriterRoute {
 
     // add protected routes
     this.router.get('/email', this.writerController.generateEmailResponse);
-    this.router.get('/action', this.writerController.generateAction);
   }
 }
 
