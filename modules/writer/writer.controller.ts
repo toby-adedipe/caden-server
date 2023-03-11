@@ -9,12 +9,14 @@ export class WriterController {
       
     const openai = new OpenAIApi(configuration);
       
-    const {tone, email} = req.body;
+    const {tone, email, intention} = req.body;
 
-    const basePromptPrefix = `generate a response to this email in an ${tone} tone`;
+    const basePromptPrefix = `generate a response to this email in a(n) ${tone} tone ${intention? intention : " "}`;
 
     const prompt = `${basePromptPrefix}\nemail:${email}.\nresponse:`
-
+    
+    console.log('body', req.body);
+    
     try {
       const baseCompletion = await openai.createCompletion({
         model: "text-davinci-003",

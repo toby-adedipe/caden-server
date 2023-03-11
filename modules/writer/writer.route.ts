@@ -1,5 +1,6 @@
 import * as express from 'express';
 import { WriterController } from './writer.controller';
+import passport, { session } from 'passport';
 
 class WriterRoute {
   router = express.Router();
@@ -13,18 +14,10 @@ class WriterRoute {
     console.log('writer protected route ts');
 
     // add authentication middleware
-    this.router.use((req, res, next) => {
-      if (!req.user) {
-        // user is not authenticated, redirect to login page or return error
-        res.status(401).send('Unauthorized');
-      } else {
-        // user is authenticated, proceed to the next middleware or route handler
-        next();
-      }
-    });
+    this.router.use(passport.authenticate('jwt', { session:false }));
 
     // add protected routes
-    this.router.get('/email', this.writerController.generateEmailResponse);
+    this.router.post('/email', this.writerController.generateEmailResponse);
   }
 }
 

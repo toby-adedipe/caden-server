@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import passport from 'passport';
+
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const emailService = require('../../services/emailService');
+
+const utils = require('../../lib/utils');
 
 require('../../models/Users');
 require('../../config/passport');
@@ -19,55 +21,53 @@ export class AuthController {
       const verification_code = crypto.randomBytes(20).toString('hex');     
     
       // Create a new user object with the email, password and verification code
-      const newUser = new User({ email, password, verification_code, first_name: firstName, last_name: lastName });
     
-      // Hash the password
-      bcrypt.genSalt(10, (err:any, salt:any) => {
-        bcrypt.hash(newUser.password, salt, (err:any, hash:any) => {
-          if (err) throw err;
-          newUser.password = hash;
-    
-          // Save the new user to the database
-          newUser.save()
-            .then((user:any) => {
-              return res.status(200).json({ success: true, message: 'User successfully created', user: user.toAuthJSON() });
-            })
-            .catch((err:any) => {
-              return next(err)
-            });
-        });
+      const newUser = new User({ 
+        email, 
+        verification_code, 
+        first_name: firstName, 
+        last_name: lastName, 
       });
+
+      // Save the new user to the database
+      newUser.save()
+        .then((user:any) => {
+          user.setPassword(password)
+          return user.save();
+        })
+        .then((user:any) => {
+          return res.status(200).json({ success: true, user: user.toAuthJSON() });
+        })
+        .catch((err:any) => {
+          return next(err)
+        });
+
         //send email verification email.
-        emailService.sendConfirmationEmail(firstName, email, verification_code)
+        //emailService.sendConfirmationEmail(firstName, email, verification_code)
     } catch (error) {
         return next(error);
     }
   }
 
   // logIn() method logs in a user
-  async logIn (req: Request, res: Response, next: NextFunction) {
+  async logIn (req: any, res: Response, next: NextFunction) {
     // Authenticate the user with the passport local strategy
-    passport.authenticate("local", function(err, user, info) {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.status(400).json({ errors: info })
-      }
-      if (user && user?.email_is_verified){
-        // If user is authenticated and email is verified, log in the user
-        req.logIn(user, function(err) {
-          if (err) {
-            return next(err);
-          }
-          return res.status(200).json({ success: `logged in ${user.id}`, user: user.toAuthJSON() });
-        });
-      }else {
-        // If email is not verified, send error message
-        return res.status(500).json({ success: false, error: 'email is not verified yet'})
-      }
-      
-    })(req, res, next);
+    const { email, password } = req.body;
+    User.findOne({ email: email })
+      .then((user:any) => {
+        if(!user){
+          return res.status(401).json({ success: false, msg: 'User not found'})
+        }
+
+        const isValid = user.validatePassword(password);
+
+        if (isValid) {
+          return res.status(200).json({ success: true, user: user.toAuthJSON() })
+        } else {
+          return res.status(401).json({ success: false, msg: 'Password incorrect'})
+        }
+      })
+    
   }
 
   async verifyUser(req: Request, res: Response, next: NextFunction){
@@ -166,11 +166,19 @@ export class AuthController {
     });
   }
 
-  async isAuthenticated(req: Request, res: Response, next: NextFunction) {
-    if (req.isAuthenticated()) {
-      return res.json({success: true, authenticated: true})
-    } else {
-      return res.json({success: true, authenticated: false})
+  async isAuthenticated(req: any, res: Response, next: NextFunction) {
+    if(req.session.viewCount){
+      req.session.viewCount = req.session.viewCount + 1;
+    }else{
+      req.session.viewCount = 1;
     }
+    console.log(req.session)
+
+    res.send(`<h4>You have visisted this page ${req.session.viewCount} times</h4>`)
+    // if (req.isAuthenticated()) {
+    //   return res.json({success: true, authenticated: true})
+    // } else {
+    //   return res.json({success: true, authenticated: false})
+    // }
   }
 }

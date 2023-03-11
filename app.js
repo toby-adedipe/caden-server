@@ -19,7 +19,11 @@ mongoose.promise = global.Promise;
 const app = express();
 
 let server;
-app.use(cors());
+app.use(cors({
+  origin: 'https://7db061077e3c.eu.ngrok.io', // Replace with your frontend domain
+  credentials: true
+}));
+
 app.use(require('morgan')('dev'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -36,7 +40,8 @@ mongoose.set('debug', true);
 app.use(session({ 
   secret: process.env.SESSION_KEY,
   cookie: { 
-    maxAge: 60000,
+    maxAge: 60000 * 60,
+    domain: '7db061077e3c.eu.ngrok.io/'
   },
   resave: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URL}),
@@ -46,6 +51,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(errorHandler());
 //Models & Routes
 require('./models/Users');
 
@@ -59,8 +65,8 @@ const startServer = async () =>  {
 }
 
 (async () => {
-  server = app.listen(8000, async () => {
-    console.log('listening on port: 8000')
+  server = app.listen(3001, async () => {
+    console.log('listening on port: 3001')
     await startServer();
   })
 
